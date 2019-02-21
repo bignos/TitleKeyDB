@@ -13,7 +13,7 @@ import textwrap
 from modules import transform2JSON  # Local module import to load data from JSON file
 
 # -[ Consts ]-
-funkiiu_exec = './funkiiu'
+funkiiu_exec = './FunKiiU.py'
 
 # -[ Command line argument ]-
 parser = argparse.ArgumentParser(description='Search on Title key',
@@ -60,13 +60,21 @@ def _get_if(title_key_value, value):
         return False
 
 def _get_install(title_key):
-    return '''\
+    result = '''\
 ################################################################################
 {exec} -title {title} -key {key}
 {exec} -title {title} -onlinekeys
+'''.format(exec=funkiiu_exec, title=title_key.tid, key=title_key.key)
+    if title_key.ticket:
+        result += '''\
 {exec} -title {title} -onlinetickets
 ################################################################################
 '''.format(exec=funkiiu_exec, title=title_key.tid, key=title_key.key)
+    else:
+        result += '''\
+################################################################################
+'''
+    return result
 
 # -[ Main ]-
 

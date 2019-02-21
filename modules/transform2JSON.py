@@ -52,8 +52,9 @@ class WiiUTitlekeyList():
                 name   = tr.xpath('./td[3]/text()')[0].replace('\n', ' ') if len(tr.xpath('./td[3]/text()')) > 0 else ''
                 region = tr.xpath('./td[4]/text()')[0] if len(tr.xpath('./td[4]/text()')) > 0 else ''
                 ttype  = tr.xpath('./td[5]/text()')[0].strip()
+                ticket = True if tr.xpath('./td[6]/a/@href') != [] else False
 
-                result.append(WiiUTitlekey(tid, key, name, region, ttype))
+                result.append(WiiUTitlekey(tid, key, name, region, ttype, ticket))
 
         return WiiUTitlekeyList(result)
 
@@ -95,7 +96,8 @@ class WiiUTitlekeyList():
                             json['key'],
                             json['name'],
                             json['region'],
-                            json['ttype'])
+                            json['ttype'],
+                            json['ticket'])
 
 
 class WiiUTitlekey():
@@ -105,16 +107,18 @@ class WiiUTitlekey():
         - name      {str}           name of the Title
         - region    {str}           region of the Title
         - ttype     {str}           type of the Title
+        - ticket    {bool}          ticket available
     """
 
     # -[ Internals ]-
 
-    def __init__(self, tid, key, name, region, ttype):
+    def __init__(self, tid, key, name, region, ttype, ticket):
         self.tid    = tid
         self.key    = key
         self.name   = name
         self.region = region
         self.ttype  = ttype
+        self.ticket = ticket
 
     def __repr__(self):
         """ Return: {str}   String representation of WiiUTitlekey instance """
@@ -122,10 +126,11 @@ class WiiUTitlekey():
 Name   : {}
 Region : {}
 Type   : {}
+Ticket : {}
 ID     : {}
 Key    : {}
 --------------------------------------------------------------------------------
-""".format(self.name, self.region, self.ttype, self.tid, self.key)
+""".format(self.name, self.region, self.ttype, self.ticket, self.tid, self.key)
 
 
 class WiiUTitlekeyListEncoder(json.JSONEncoder):
@@ -146,6 +151,7 @@ class WiiUTitlekeyEncoder(json.JSONEncoder):
             result['name']   = wii_u_title_key.name
             result['region'] = wii_u_title_key.region
             result['ttype']  = wii_u_title_key.ttype
+            result['ticket'] = wii_u_title_key.ticket
             result['tid']    = wii_u_title_key.tid
             result['key']    = wii_u_title_key.key
 
@@ -179,7 +185,8 @@ def _html_to_json(source_html, dest_json):
 # -[ Main ]-
 
 if __name__ == '__main__':
-    title_list = WiiUTitlekeyList.loadFromJSON(wiiu_title_key_json)
+    _html_to_json(wiiu_title_key_html, wiiu_title_key_json)
+#    title_list = WiiUTitlekeyList.loadFromJSON(wiiu_title_key_json)
 
-    for title_key in title_list.wii_u_title_key_list:
-        print(title_key)
+#    for title_key in title_list.wii_u_title_key_list:
+#        print(title_key)
