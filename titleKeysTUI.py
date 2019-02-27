@@ -11,6 +11,7 @@
 __VERSION__ = 0.1
 
 import npyscreen
+import curses
 import os
 
 from modules import transform2JSON  # Local module import to load data from JSON file
@@ -109,6 +110,9 @@ class MainForm(npyscreen.FormBaseNew):
         self.grid.add_handlers({
             ' '  : self.when_selected
             })
+        self.console.add_handlers({
+            curses.KEY_DC : self.when_console_delete
+            })
 
         self.title_list = transform2JSON.WiiUTitlekeyList.loadFromJSON(transform2JSON.wiiu_title_key_json)
         self.selected_values = []
@@ -116,12 +120,24 @@ class MainForm(npyscreen.FormBaseNew):
 
     def when_selected(self, inpt):
         selected_line = self.grid.edit_cell[0]
-        if self.sorted_title_keys[selected_line] not in self.selected_values:
-            self.selected_values.append(self.sorted_title_keys[selected_line])
-            self.console.values.append([self.sorted_title_keys[selected_line].name,\
-                    self.sorted_title_keys[selected_line].region,\
-                    self.sorted_title_keys[selected_line].ttype])
+        selected_title_key = self.sorted_title_keys[selected_line]
+        if selected_title_key not in self.selected_values:
+            self._add_to_selected_value(selected_title_key)
+
+            if(selected_title_key.tid[7] == '0'):    # If title is an application
+                patch = self._search_for_patch(selected_title_key)
+                if patch != None:
+                    self._add_to_selected_value(patch)
+                dlc = self._search_for_dlc(selected_title_key)
+                if dlc != None:
+                    self._add_to_selected_value(dlc)
             self.console.update()
+
+    def when_console_delete(self, inpt):
+        active_line = self.console.edit_cell[0]
+        self.selected_values.pop(active_line)
+        self.console.values.pop(active_line)
+        self.console.update()
 
     def when_install(self, inpt):
         self._do_install()
@@ -161,11 +177,33 @@ class MainForm(npyscreen.FormBaseNew):
 
         return True
 
+    def _add_to_selected_value(self, title_key): 
+        self.selected_values.append(title_key)
+        self.console.values.append([title_key.name, title_key.region, title_key.ttype])
+
+    def __search_for_type(self, title_key, ttype):
+        name = title_key.name
+        for tkey in self.title_list.wii_u_title_key_list:
+            if tkey.name == name\
+                    and tkey.region == title_key.region\
+                    and tkey.ttype == ttype:
+                return tkey
+        return None
+
+    def _search_for_patch(self, title_key):
+        return self.__search_for_type(title_key, 'Patch')
+
+    def _search_for_dlc(self, title_key):
+        return self.__search_for_type(title_key, 'DLC')
+
     def _do_install(self):
         global cl_install_without_ticket, cl_install_with_ticket
         if len(self.selected_values) == 0:
             npyscreen.notify_confirm('The install list is empty', title= 'WARNING')
             return
+        else:
+            if not npyscreen.notify_ok_cancel('You are about to download selected title', title='WARNING'):
+                return 
         key_list = []
         key_with_ticket = []
         key_without_ticket = []
